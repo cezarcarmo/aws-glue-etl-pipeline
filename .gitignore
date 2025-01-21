@@ -3,4 +3,4 @@ __pycache__/
 .env
 .terraform/
 .data/raw/
-.data/processed/
+.data/processed/ 
