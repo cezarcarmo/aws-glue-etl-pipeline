@@ -28,6 +28,21 @@ resource "aws_glue_crawler" "example_crawler" {
   }
 }
 
+resource "aws_glue_crawler" "product_reviews_crawler" {
+  name            = "product-reviews-crawler"
+  role            = "arn:aws:iam::038462755196:role/GlueServiceRole"
+  database_name   = aws_glue_catalog_database.example_database.name
+
+  s3_target {
+    path = "s3://${aws_s3_bucket.glue_bucket.bucket}/raw"
+  }
+
+  configuration = jsonencode({
+    "Version" = 1  # Especificando a versão da configuração
+  })
+}
+
+
 # Glue Job
 resource "aws_glue_job" "example_job" {
   name     = "example-job"
