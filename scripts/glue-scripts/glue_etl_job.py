@@ -1,38 +1,39 @@
 from awsglue.context import GlueContext
 from pyspark.context import SparkContext
 from pyspark.sql import functions as F
+from awsglue.dynamicframe import DynamicFrame
 
-# Iniciar o contexto do Glue e Spark
+# Inicializa o contexto do Spark e Glue
 sc = SparkContext()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 
-# 1. Extração: Carregar dados do Glue Data Catalog
+# 1. Extração dos dados do Glue Data Catalog
 datasource0 = glueContext.create_dynamic_frame.from_catalog(
-    database="example_database",  # Substitua pelo nome do seu banco de dados
-    table_name="reviews_csv",     # Substitua pelo nome da tabela criada pelo Crawler
+    database="example_database",  # Substitua pelo nome do seu banco de dados no Glue Catalog
+    table_name="reviews_csv",  # Substitua pelo nome da tabela criada pelo Crawler
     transformation_ctx="datasource0"
 )
 
-# 2. Transformação: Limpeza e agregação dos dados
+# 2. Converter DynamicFrame para DataFrame para facilitar a transformação
 df = datasource0.toDF()
 
-# Limpeza: Remover linhas com reviewText nulo ou vazio
-df_cleaned = df.filter(df["reviewText"].isNotNull())
+# 3. Limpeza dos dados: Remover linhas com a coluna 'Text' nula ou vazia
+df_cleaned = df.filter(df["Text"].isNotNull())
 
-# Agregação: Calcular a média das avaliações por produto
-df_aggregated = df_cleaned.groupBy("productTitle").agg(
-    F.avg("rating").alias("average_rating"),
-    F.count("reviewText").alias("review_count")
+# 4. Agregação: Calcular a média das avaliações por 'ProductId'
+df_aggregated = df_cleaned.groupBy("ProductId").agg(
+    F.avg("Score").alias("average_rating"),  # Cálculo da média das avaliações
+    F.count("Text").alias("review_count")  # Contagem de reviews
 )
 
-# 3. Carga: Armazenar os dados no S3 em formato Parquet
-dynamic_frame_aggregated = glueContext.create_dynamic_frame.from_dataframe(df_aggregated, glueContext)
+# 5. Converter o DataFrame de volta para DynamicFrame
+dynamic_frame_aggregated = DynamicFrame.fromDF(df_aggregated, glueContext, "dynamic_frame_aggregated")
 
-# Caminho do S3 para armazenar os dados processados
-s3_path = "s3://camc-glue-etl-bucket/processed/"
+# 6. Carga dos dados: Armazenar os dados no S3 em formato Parquet
+s3_path = "s3://camc-glue-etl-bucket/processed/"  
 glueContext.write_dynamic_frame.from_options(
-    dynamic_frame_aggregated,
+    frame=dynamic_frame_aggregated,
     connection_type="s3",
     connection_options={"path": s3_path},
     format="parquet"
