@@ -64,9 +64,6 @@ O objetivo é demonstrar o processo de construção de um pipeline ETL com as me
 4. Armazenamento dos dados transformados no S3.
 5. Atualização do Glue Data Catalog para consulta via Athena.
 
-#### Diagramas de Arquitetura
-
-Os diagramas da arquitetura podem ser encontrados [aqui](#) (criados com Lucidchart/Diagrams).
 
 ## Requisitos
 
